@@ -3,8 +3,7 @@
 
 Basic api rest for Medical appointments using Java,Springboot, Mysql and JPA as ORM including the main data models like doctors, patients and medical appointment between doctors and patients.
 
-
-Author:Cristian Arevalo.
+This project was developed for the program "TODOS A LA U - Universidad DISTRITAL - BACKEND INTERMEDIO"
 
 
 You can clone this repo as starter project for your Springboot, Mysql API server
@@ -39,7 +38,7 @@ You can clone this repo as starter project for your Springboot, Mysql API server
 ```
 
 
-**2. Install the required package:-**
+**2. Install the required package:**
 The project is created with Maven, so you just need to import it to your IDE and build the project to resolve the dependencies, however you should configure the MySQL Connection on aplication.properties
 
 Remember that the .application.properties file must be created for the API to work.
@@ -246,3 +245,5 @@ A medical appointment can only be created if previously exist an assigned consul
 ##### [POST] /api/consultorios-asignados
 ![POST Assigned Consulting room](/assets/Asigned%20consulting%20rooms/PostAssignedConsultingRooms.gif)
 
+# Authors
+- [@CristiansArevalom](https://github.com/CristiansArevalom)
