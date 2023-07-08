@@ -13,7 +13,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Id;
-//VALIDAR SI CREAR PERSONA Y HEREDAR. SI SEHACE ASI, COMO QUEDARIA?
 
 @Entity
 @Table(name = "Doctores")

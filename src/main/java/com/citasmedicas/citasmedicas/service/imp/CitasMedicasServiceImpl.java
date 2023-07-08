@@ -303,7 +303,6 @@ public class CitasMedicasServiceImpl implements CitasMedicasService {
            citaMedicaDb.getConsultorioAsignado().getConsultorio().getNumero()))
             .collect(Collectors.toList());
 
-        // TODO Auto-generated method stub
     }
 
     
