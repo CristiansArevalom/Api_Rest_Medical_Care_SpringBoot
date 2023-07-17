@@ -43,7 +43,7 @@ import com.citasmedicas.citasmedicas.util.CommonMapper;
 import org.slf4j.Logger;
 //import org.slf4j.LoggerFactory;
 //estoy incumpliendo con el principio de ley de demeter
-//El error esta en que no estoy cumpliendo con srp (estoy haciendo manejo de BD + conversión a DTO's)
+//El error esta en que no estoy cumpliendo con srp (estoy haciendo manejo de BD + conversión a DTO's,. se separa en mapper)
 //LA PERSISTENCIA Deberia dar LA DATA en el servici
 //ORM NO ES BIDIRECCIONAL
 
