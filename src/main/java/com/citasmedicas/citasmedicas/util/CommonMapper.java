@@ -1,6 +1,5 @@
 package com.citasmedicas.citasmedicas.util;
 
-import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
@@ -8,10 +7,13 @@ import org.springframework.stereotype.Component;
 import com.citasmedicas.citasmedicas.controller.dto.CitaMedicaResponseDto;
 import com.citasmedicas.citasmedicas.controller.dto.ConsultorioAsignadoResponseDto;
 import com.citasmedicas.citasmedicas.controller.dto.DoctorResponseDto;
+import com.citasmedicas.citasmedicas.controller.dto.EspecialidadDto;
 import com.citasmedicas.citasmedicas.controller.dto.PacienteResponseDto;
 import com.citasmedicas.citasmedicas.model.entity.CitaMedica;
 import com.citasmedicas.citasmedicas.model.entity.ConsultorioAsignado;
 import com.citasmedicas.citasmedicas.model.entity.Doctor;
+import com.citasmedicas.citasmedicas.model.entity.EnumEspecialidad;
+import com.citasmedicas.citasmedicas.model.entity.Especialidad;
 import com.citasmedicas.citasmedicas.model.entity.Paciente;
 
 @Component
@@ -32,7 +34,7 @@ public class CommonMapper {
     }
 
     // se crea este metodo ya el entity y DTO no tienen los mismos campos ni tipo de
-    // dato
+ 
     public CitaMedicaResponseDto transformarCitaMedicaADto(CitaMedica citaMedicaDb) {
         return new CitaMedicaResponseDto(
                 citaMedicaDb.getId().toString(),
@@ -47,8 +49,6 @@ public class CommonMapper {
 
     }
 
-    // se crea este metodo ya el entity y DTO no tienen los mismos campos ni tipo de
-    // dato
     public PacienteResponseDto transformarPacienteADto(Paciente paciente) {
         return new PacienteResponseDto(
                 paciente.getId().toString(),
@@ -59,8 +59,6 @@ public class CommonMapper {
                 paciente.getTelefono());
     }
 
-    // se crea este metodo ya el entity y DTO no tienen los mismos campos ni tipo de
-    // dato
     public DoctorResponseDto transformarDoctorADto(Doctor doctor) {
         return new DoctorResponseDto(doctor.getId(),
                 doctor.getNombre(),
@@ -69,8 +67,6 @@ public class CommonMapper {
                 doctor.getEspecialidad().getNombre());
 
     }
-
-    // se crea este metodo ya el entity y DTO no tienen los mismos campos ni tipo de
 
     public ConsultorioAsignadoResponseDto transformarConsultAsigADto(ConsultorioAsignado consultAsigDb) {
         return new ConsultorioAsignadoResponseDto(consultAsigDb.getDoctor().getId(),
@@ -81,4 +77,11 @@ public class CommonMapper {
                 consultAsigDb.getConsultorio().getDescripcion(), consultAsigDb.getId(),
                 consultAsigDb.getInicioReserva(), consultAsigDb.getFinReserva());
     }
+
+    public Especialidad transformarDtoAEspecialidad(EspecialidadDto especialidadDto){
+        EnumEspecialidad enumEspecialidad = EnumEspecialidad.valueOf(especialidadDto.getNombre());
+        return new Especialidad(especialidadDto.getId(), enumEspecialidad);   
+    }
+
+
 }

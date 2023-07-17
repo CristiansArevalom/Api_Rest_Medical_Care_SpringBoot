@@ -50,7 +50,7 @@ import org.slf4j.Logger;
 @Service
 public class CitasMedicasServiceImpl implements CitasMedicasService {
     private static final Logger logger = LoggerFactory.getLogger(CitasMedicasServiceImpl.class);
-    private CitaMedicaRepository citaMedicaRepository;
+    private final CitaMedicaRepository citaMedicaRepository;
     private final CommonMapper mapper;
     @Autowired
     private ConsultorioAsignadoService consultorioAsignadoService;
@@ -68,7 +68,7 @@ public class CitasMedicasServiceImpl implements CitasMedicasService {
         this.mapper=mapper;
     }
 
-    @Override
+    @Override //OK DTO
     public List<CitaMedicaResponseDto> getCitasMedias() {
         try {
             List<CitaMedica> citasMedicasDb = citaMedicaRepository.findAll();
@@ -169,7 +169,7 @@ public class CitasMedicasServiceImpl implements CitasMedicasService {
 
     }
 
-    @Override
+    @Override //PDT DTO
     public CitaMedicaResponseDto createCitaMedica(CitaMedicaRequestDto citaMedicaRequestDto) {
         // creo que cumpliria demeter porque me comunico con los objetos creados en el metodo y sus propiedades,
         //No creo violar la ley de demeter ya que estoy accediendo a los atributos creados en el mismo metodo
@@ -218,7 +218,7 @@ public class CitasMedicasServiceImpl implements CitasMedicasService {
             ConsultorioDto consultorioDto = consultorioService
                     .getConsultorioById(consultorioAsigCitaDto.getIdConsultorio());
 
-                    
+          ///VALIDAR AQUI PARA CONVERTIR A ENTIDADES          
             Paciente pacienteDb = new Paciente(Long.parseLong(pacienteDto.getId()), pacienteDto.getNombre(),
                     pacienteDto.getApellido(),
                     pacienteDto.getCedula(), pacienteDto.getFechaNacimiento(), pacienteDto.getTelefono());
@@ -248,7 +248,7 @@ public class CitasMedicasServiceImpl implements CitasMedicasService {
 
     }
 
-    @Override
+    @Override //OK DTO
     public CitaMedicaResponseDto getCitasMedicasById(Long id) {
         Optional<CitaMedica> citaMedicaOp = citaMedicaRepository.findById(id);
         if (citaMedicaOp.isEmpty()) {
@@ -258,7 +258,7 @@ public class CitasMedicasServiceImpl implements CitasMedicasService {
         return mapper.transformarCitaMedicaADto(citaMedicaDb);
     }
 
-    @Override
+    @Override //OK DTO
     public List<CitaMedicaResponseDto> getCitasMedicasByConsultorioAsignadoId(Long id) {
         try {
             List<CitaMedica> citasMedicasDb = citaMedicaRepository.findAllByConsultorioAsignadoId(id);
@@ -344,7 +344,7 @@ public class CitasMedicasServiceImpl implements CitasMedicasService {
 
     }
 
-    @Override
+    @Override //OK DTO
     public List<CitaMedicaResponseDto> getCitasMedicasByDoctorId(Long id) {
         // primero validar si el doctor existe
         DoctorResponseDto doctor = doctorService.getDoctoresById(id);
@@ -354,7 +354,7 @@ public class CitasMedicasServiceImpl implements CitasMedicasService {
                         .collect(Collectors.toList());
    }
 
-    @Override
+    @Override // OK DTO
     public List<CitaMedicaResponseDto> getCitasMedicasByPacienteId(Long id) {
         // primero validar si el paciente existe
         PacienteResponseDto paciente = pacienteService.getPacienteById(id);
@@ -364,7 +364,7 @@ public class CitasMedicasServiceImpl implements CitasMedicasService {
                     .stream().map(citaMedicaDb ->mapper.transformarCitaMedicaADto(citaMedicaDb)).collect(Collectors.toList());   
     }
 
-    @Override
+    @Override //OK DTO
     public List<CitaMedicaResponseDto> getCitasMedicasByNombreEspecialidad(String especialidad) {
         // mirando si existe especialidad
         EspecialidadDto especialidadOp = especialidadesService.getEspecialidadByNombre(especialidad);

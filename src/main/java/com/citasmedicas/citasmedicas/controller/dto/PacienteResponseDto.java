@@ -1,6 +1,7 @@
 package com.citasmedicas.citasmedicas.controller.dto;
 
 import java.time.LocalDate;
+import java.time.Period;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
@@ -24,7 +25,7 @@ public class PacienteResponseDto {
         this.cedula = cedula;
         this.fechaNacimiento = fechaNacimiento;
         this.telefono = telefono;
-        this.edad=LocalDate.now().getYear()-fechaNacimiento.getYear();
+        this.edad= Period.between(fechaNacimiento, LocalDate.now()).getYears();
     }
     public String getId() {
         return id;
@@ -67,6 +68,8 @@ public class PacienteResponseDto {
         this.telefono = telefono;
     }
     public Integer getEdad() {
+
         return edad;
     }
+
 }

@@ -12,6 +12,7 @@ import com.citasmedicas.citasmedicas.controller.dto.ConsultorioAsignadoResponseD
 import com.citasmedicas.citasmedicas.controller.dto.ConsultorioDto;
 import com.citasmedicas.citasmedicas.controller.dto.DoctorResponseDto;
 import com.citasmedicas.citasmedicas.controller.dto.EspecialidadDto;
+
 import com.citasmedicas.citasmedicas.exceptions.ConsultorioAlreadyExistException;
 import com.citasmedicas.citasmedicas.exceptions.ConsultorioDoesntExistException;
 import com.citasmedicas.citasmedicas.exceptions.ConsultorioReservadoAlreadyExistException;
@@ -57,7 +58,7 @@ public class ConsultorioAsignadoServiceImpl implements ConsultorioAsignadoServic
 
     }
 
-    @Override
+    @Override //OK DTO
     public List<ConsultorioAsignadoResponseDto> getConsultoriosAsignados() {
         try {
             List<ConsultorioAsignado> consultorioAsignados = consultorioAsignadoRepository.findAll();
@@ -69,7 +70,7 @@ public class ConsultorioAsignadoServiceImpl implements ConsultorioAsignadoServic
         }
     }
 
-    @Override
+    @Override //PDT DTO
     public ConsultorioAsignadoResponseDto createConsultorioAsignado(
             ConsultorioAsignadoRequestDto consultorioAsignadoRequestDto) {
         try {
@@ -107,16 +108,21 @@ public class ConsultorioAsignadoServiceImpl implements ConsultorioAsignadoServic
                     .getConsultorioById(consultorioAsignadoRequestDto.getId_consultorio());
 
             DoctorResponseDto doctorDto = doctorService.getDoctoresById(consultorioAsignadoRequestDto.getId_doctor());
+            
             EspecialidadDto especialidadDto = especialidadService
                     .getEspecialidadByNombre(doctorDto.getNombreEspecialidad());
 
             ConsultorioAsignado consultAsigDb = new ConsultorioAsignado();
             consultAsigDb.setInicioReserva(consultorioAsignadoRequestDto.getInicioReserva());
             consultAsigDb.setFinReserva(consultorioAsignadoRequestDto.getFinReserva());
-            consultAsigDb.setConsultorio(new Consultorio(consultDto.getId(), consultDto.getCiudad(),
+            
+            //CONVIRTIENDO DTO validar si se puede hacer de mejor forma
+            consultAsigDb.setConsultorio(mapper.convertToEntity(consultDto, Consultorio.class));
+           /* consultAsigDb.setConsultorio(new Consultorio(consultDto.getId(), consultDto.getCiudad(),
                     consultDto.getDireccion(), consultDto.getNumero(), consultDto.getDescripcion()));
+                     */
 
-            /* Asignando DOCTOR, CONVIRTIENDO DTO validar si se puede hacer de mejor forma */
+            /* Asignando DOCTOR, */
             
             Especialidad especialidadAsigDb = new Especialidad(especialidadDto.getId(),
                     EnumEspecialidad.valueOf(especialidadDto.getNombre()));
@@ -138,7 +144,7 @@ public class ConsultorioAsignadoServiceImpl implements ConsultorioAsignadoServic
         }
     }
 
-    @Override
+    @Override //OK DTO
     public List<ConsultorioAsignadoResponseDto> getConsultorioAsignadoByConsultorio(Long id) {
         try {
             // buscar si el id del consultorio existe
@@ -156,16 +162,15 @@ public class ConsultorioAsignadoServiceImpl implements ConsultorioAsignadoServic
         }
     }
 
-    @Override
+    @Override //OK DTO
     public List<ConsultorioAsignadoResponseDto> getConsultorioAsignadoByEspecialidad(String especialidad) {
         try {
 
             // trae uunicamente los consuktoriosAsingados que tengan esa especialidad
             EspecialidadDto especialidadOp = especialidadService.getEspecialidadByNombre(especialidad.toUpperCase());
-            EnumEspecialidad enumEspecialidad = EnumEspecialidad.valueOf(especialidadOp.getNombre());
-
             List<ConsultorioAsignado> consultorioAsignados = consultorioAsignadoRepository
-                    .findAllByDoctorEspecialidad(new Especialidad(especialidadOp.getId(), enumEspecialidad));
+            .findAllByDoctorEspecialidad(mapper.transformarDtoAEspecialidad(especialidadOp));
+                       
             return consultorioAsignados.stream().map(
                     consAsign -> mapper.transformarConsultAsigADto(consAsign))
                     .collect(Collectors.toList());
