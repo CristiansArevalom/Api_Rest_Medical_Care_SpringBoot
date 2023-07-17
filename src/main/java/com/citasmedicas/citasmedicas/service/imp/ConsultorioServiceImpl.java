@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-
 import org.springframework.stereotype.Service;
 
 import com.citasmedicas.citasmedicas.controller.dto.ConsultorioDto;
@@ -16,15 +15,19 @@ import com.citasmedicas.citasmedicas.exceptions.ConsultorioDoesntExistException;
 import com.citasmedicas.citasmedicas.model.entity.Consultorio;
 import com.citasmedicas.citasmedicas.model.repository.ConsultorioRepository;
 import com.citasmedicas.citasmedicas.service.ConsultorioService;
+import com.citasmedicas.citasmedicas.util.CommonMapper;
 
 @Service
 public class ConsultorioServiceImpl implements ConsultorioService {
     private static final LocalDateTime currentDate = LocalDateTime.now();
+    private final CommonMapper mapper;
 
     private final ConsultorioRepository consultorioRepository;
 
-    public ConsultorioServiceImpl(ConsultorioRepository consultorioRepository) {
+    public ConsultorioServiceImpl(ConsultorioRepository consultorioRepository,
+            CommonMapper mapper) {
         this.consultorioRepository = consultorioRepository;
+        this.mapper = mapper;
     }
 
     @Override
@@ -32,8 +35,9 @@ public class ConsultorioServiceImpl implements ConsultorioService {
         try {
             List<Consultorio> consultorios = consultorioRepository.findAll();
             return consultorios.stream()
-                    .map(consultorio -> new ConsultorioDto(consultorio.getId(), consultorio.getCiudad(),
-                            consultorio.getDireccion(), consultorio.getNumero(), consultorio.getDescripcion()))
+                    // en este caso se usa la conversion a dto usando mapper ya que los atributos
+                    // del dto y entity son iguales
+                    .map(consultorio -> mapper.convertToDto(consultorio, ConsultorioDto.class))
                     .collect(Collectors.toList());
         } catch (Exception e) {
             throw new UnsupportedOperationException("Unimplemented method 'getConsultorios'");
@@ -47,6 +51,7 @@ public class ConsultorioServiceImpl implements ConsultorioService {
             List<Consultorio> consultorioByDireccion = consultorioRepository
                     .findByCiudadAndDescripcionAndDireccionAndNumero(consultorioDto.getCiudad(),
                             consultorioDto.getDescripcion(), consultorioDto.getDireccion(), consultorioDto.getNumero());
+
             Consultorio consultorioDb = new Consultorio();
             consultorioDb.setCiudad(consultorioDto.getCiudad());
             consultorioDb.setDireccion(consultorioDto.getDireccion());
@@ -61,8 +66,7 @@ public class ConsultorioServiceImpl implements ConsultorioService {
                 }
             } else {
                 consultorioDb = consultorioRepository.save(consultorioDb);
-                return new ConsultorioDto(consultorioDb.getId(), consultorioDb.getCiudad(),
-                        consultorioDb.getDireccion(), consultorioDb.getNumero(), consultorioDb.getDescripcion());
+                consultorioDto = mapper.convertToDto(consultorioDb, ConsultorioDto.class);
 
             }
         } catch (RuntimeException ex) {
@@ -98,8 +102,7 @@ public class ConsultorioServiceImpl implements ConsultorioService {
         } else {
             consultorioDb = consultorioRepository.save(consultorioDb);
         }
-    return new ConsultorioDto(consultorioDb.getId(), consultorioDb.getCiudad(),
-        consultorioDb.getDireccion(), consultorioDb.getNumero(), consultorioDb.getDescripcion());
+        return mapper.convertToDto(consultorioDb, ConsultorioDto.class);
 
     }
 
@@ -120,19 +123,20 @@ public class ConsultorioServiceImpl implements ConsultorioService {
             throw new ConsultorioDoesntExistException("El consultorio no existe");
         }
         Consultorio consultorioDb = consultorioOptional.get();
-        return new ConsultorioDto(consultorioDb.getId(), consultorioDb.getCiudad(), consultorioDb.getDireccion(),
-                consultorioDb.getNumero(), consultorioDb.getDescripcion());
+        return mapper.convertToDto(consultorioDb, ConsultorioDto.class);
     }
 
     @Override
     public List<ConsultorioDto> getConsultoriosDisponibles(String fechaInicioStr, String fechaFinStr) {
-        //DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+        // DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy
+        // HH:mm");
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
         LocalDateTime fechaInicio;
         LocalDateTime fechaFin;
         try {
-            //conviertiendo a formato localdatetime del repository, se hizo aca porque no tengo nungun DTO para hacer esa
-            //conversion directa desde el dto
+            // conviertiendo a formato localdatetime del repository, se hizo aca porque no
+            // tengo nungun DTO para hacer esa
+            // conversion directa desde el dto
             fechaInicio = LocalDateTime.parse(fechaInicioStr, formatter);
             fechaFin = LocalDateTime.parse(fechaFinStr, formatter);
             if ((fechaInicio.isBefore(currentDate)) || (fechaInicio.isAfter(fechaFin))) {
@@ -143,18 +147,19 @@ public class ConsultorioServiceImpl implements ConsultorioService {
                         "Las fechas de fin a reservar no pueden ser anterior a la fecha de hoy");
             }
 
-        List<Consultorio> consultoriosLibres = consultorioRepository.obtenerConsultoriosDisponibles(fechaInicio, fechaFin);
+            List<Consultorio> consultoriosLibres = consultorioRepository.obtenerConsultoriosDisponibles(fechaInicio,
+                    fechaFin);
 
-        return consultoriosLibres.stream()
-        .map(consultorio -> new ConsultorioDto(consultorio.getId(), consultorio.getCiudad(),
-                consultorio.getDireccion(), consultorio.getNumero(), consultorio.getDescripcion()))
-        .collect(Collectors.toList());
+            return consultoriosLibres.stream()
+                    .map(consultorio -> mapper.convertToDto(consultorio, ConsultorioDto.class))
+                    .collect(Collectors.toList());
         } catch (DateTimeParseException e) {
             // Manejo de error cuando el formato de fecha es incorrecto
-            // Puedes devolver un mensaje de error o lanzar una excepción personalizada, por ejemplo:
+            // Puedes devolver un mensaje de error o lanzar una excepción personalizada, por
+            // ejemplo:
             throw new IllegalArgumentException("Formato de fecha inválido. Utilice el formato dd-MM-yyyy HH:mm"
-            +"fechaInicio "+fechaInicioStr+"fechaFin"+fechaFinStr);
-        } 
+                    + "fechaInicio " + fechaInicioStr + "fechaFin" + fechaFinStr);
+        }
 
     }
 

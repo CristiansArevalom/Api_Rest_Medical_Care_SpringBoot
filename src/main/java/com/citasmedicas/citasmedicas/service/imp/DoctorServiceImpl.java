@@ -17,6 +17,7 @@ import com.citasmedicas.citasmedicas.model.entity.Especialidad;
 import com.citasmedicas.citasmedicas.model.repository.DoctorRepository;
 import com.citasmedicas.citasmedicas.service.DoctorService;
 import com.citasmedicas.citasmedicas.service.EspecialidadesService;
+import com.citasmedicas.citasmedicas.util.CommonMapper;
 
 @Service
 public class DoctorServiceImpl implements DoctorService {
@@ -25,9 +26,12 @@ public class DoctorServiceImpl implements DoctorService {
     // nombre
     private EspecialidadesService especialidadesService;
     private final DoctorRepository doctorRepository;
+    private final CommonMapper mapper;
 
-    public DoctorServiceImpl(DoctorRepository doctorRepository) {
+    public DoctorServiceImpl(DoctorRepository doctorRepository,
+            CommonMapper mapper) {
         this.doctorRepository = doctorRepository;
+        this.mapper = mapper;
 
     }
 
@@ -36,12 +40,14 @@ public class DoctorServiceImpl implements DoctorService {
         try {
             List<Doctor> doctores = doctorRepository.findAllWithEspecialidad();
             // llenando DTO doctores
-            return doctores.stream().map(doctor -> new DoctorResponseDto(doctor.getId(),
-                    doctor.getNombre(),
-                    doctor.getApellido(),
-                    doctor.getCorreo(),
-                    doctor.getEspecialidad().getNombre())).collect(Collectors.toList());
-
+            return doctores.stream().map(doctor -> mapper.transformarDoctorADto(doctor)).collect(Collectors.toList());
+            /*
+             * return doctores.stream().map(doctor -> new DoctorResponseDto(doctor.getId(),
+             * doctor.getNombre(),
+             * doctor.getApellido(),
+             * doctor.getCorreo(),
+             * doctor.getEspecialidad().getNombre())).collect(Collectors.toList());
+             */
         } catch (RuntimeException e) {
             e.printStackTrace();
             throw new UnsupportedOperationException("ERROR al buscar" + e.getStackTrace());
@@ -73,8 +79,7 @@ public class DoctorServiceImpl implements DoctorService {
                 new Especialidad(especialidadDto.getId(), EnumEspecialidad.valueOf(especialidadDto.getNombre())));
 
         doctorDb = doctorRepository.save(doctorDb);
-        return new DoctorResponseDto(doctorDb.getId(), doctorDb.getNombre(), doctorDb.getApellido(),
-                doctorDb.getCorreo(), doctorDb.getEspecialidad().getNombre());
+        return mapper.transformarDoctorADto(doctorDb);
     }
 
     @Override
@@ -101,9 +106,7 @@ public class DoctorServiceImpl implements DoctorService {
         doctorDb.setEspecialidad(
                 new Especialidad(especialidadDto.getId(), EnumEspecialidad.valueOf(especialidadDto.getNombre())));
         doctorDb = doctorRepository.save(doctorDb);
-        return new DoctorResponseDto(doctorDb.getId(), doctorDb.getNombre(), doctorDb.getApellido(),
-                doctorDb.getCorreo(), doctorDb.getEspecialidad().getNombre());
-
+        return mapper.transformarDoctorADto(doctorDb);
     }
 
     @Override
@@ -124,8 +127,7 @@ public class DoctorServiceImpl implements DoctorService {
             throw new DoctorDoesntExistExceptions("El doctor con ese Id no existe");
         }
         Doctor doctorDb = doctorOp.get();
-        return new DoctorResponseDto(doctorDb.getId(), doctorDb.getNombre(), doctorDb.getApellido(),
-                doctorDb.getCorreo(), doctorDb.getEspecialidad().getNombre());
+        return mapper.transformarDoctorADto(doctorDb);
     }
 
     @Override
@@ -138,11 +140,7 @@ public class DoctorServiceImpl implements DoctorService {
         if (doctores.size() == 0) {
             throw new DoctorDoesntExistExceptions("No existen doctores con esa especialidad");
         }
-        return doctores.stream().map(doctor -> new DoctorResponseDto(doctor.getId(),
-                doctor.getNombre(),
-                doctor.getApellido(),
-                doctor.getCorreo(),
-                doctor.getEspecialidad().getNombre())).collect(Collectors.toList());
+        return doctores.stream().map(doctor -> mapper.transformarDoctorADto(doctor)).collect(Collectors.toList());
     }
 
 }

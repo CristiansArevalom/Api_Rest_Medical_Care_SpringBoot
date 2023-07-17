@@ -16,30 +16,42 @@ import com.citasmedicas.citasmedicas.controller.dto.ConsultorioDto;
 import com.citasmedicas.citasmedicas.controller.dto.DoctorResponseDto;
 import com.citasmedicas.citasmedicas.controller.dto.EspecialidadDto;
 import com.citasmedicas.citasmedicas.controller.dto.PacienteResponseDto;
+
 import com.citasmedicas.citasmedicas.exceptions.CitaMedicaException;
 import com.citasmedicas.citasmedicas.exceptions.ConsultorioDoesntExistException;
+
 import com.citasmedicas.citasmedicas.model.entity.CitaMedica;
+
+
 import com.citasmedicas.citasmedicas.model.entity.Consultorio;
 import com.citasmedicas.citasmedicas.model.entity.ConsultorioAsignado;
 import com.citasmedicas.citasmedicas.model.entity.Doctor;
 import com.citasmedicas.citasmedicas.model.entity.EnumEspecialidad;
 import com.citasmedicas.citasmedicas.model.entity.Especialidad;
 import com.citasmedicas.citasmedicas.model.entity.Paciente;
+
 import com.citasmedicas.citasmedicas.model.repository.CitaMedicaRepository;
+
 import com.citasmedicas.citasmedicas.service.CitasMedicasService;
 import com.citasmedicas.citasmedicas.service.ConsultorioAsignadoService;
 import com.citasmedicas.citasmedicas.service.ConsultorioService;
 import com.citasmedicas.citasmedicas.service.DoctorService;
 import com.citasmedicas.citasmedicas.service.EspecialidadesService;
 import com.citasmedicas.citasmedicas.service.PacienteService;
+import com.citasmedicas.citasmedicas.util.CommonMapper;
 
 import org.slf4j.Logger;
 //import org.slf4j.LoggerFactory;
+//estoy incumpliendo con el principio de ley de demeter
+//El error esta en que no estoy cumpliendo con srp (estoy haciendo manejo de BD + conversión a DTO's)
+//LA PERSISTENCIA Deberia dar LA DATA en el servici
+//ORM NO ES BIDIRECCIONAL
 
 @Service
 public class CitasMedicasServiceImpl implements CitasMedicasService {
     private static final Logger logger = LoggerFactory.getLogger(CitasMedicasServiceImpl.class);
     private CitaMedicaRepository citaMedicaRepository;
+    private final CommonMapper mapper;
     @Autowired
     private ConsultorioAsignadoService consultorioAsignadoService;
     @Autowired
@@ -51,42 +63,44 @@ public class CitasMedicasServiceImpl implements CitasMedicasService {
     @Autowired
     ConsultorioService consultorioService;
 
-    public CitasMedicasServiceImpl(CitaMedicaRepository citaMedicaRepository) {
+    public CitasMedicasServiceImpl(CitaMedicaRepository citaMedicaRepository,CommonMapper mapper) {
         this.citaMedicaRepository = citaMedicaRepository;
+        this.mapper=mapper;
     }
 
     @Override
     public List<CitaMedicaResponseDto> getCitasMedias() {
         try {
             List<CitaMedica> citasMedicasDb = citaMedicaRepository.findAll();
-            return citasMedicasDb.stream().map(citaMedicaDb -> new CitaMedicaResponseDto(citaMedicaDb.getId().toString(),
-                    citaMedicaDb.getConsultorioAsignado().getDoctor().getNombre() + " " + citaMedicaDb.getConsultorioAsignado().getDoctor().getApellido(),
-                    citaMedicaDb.getPaciente().getNombre() + " " + citaMedicaDb.getPaciente().getApellido(),
-                    citaMedicaDb.getConsultorioAsignado().getDoctor().getEspecialidad().getNombre(), citaMedicaDb.getFechaInicio(),
-                    citaMedicaDb.getFechaFin(),
-                    citaMedicaDb.getConsultorioAsignado().getConsultorio().getNumero()))
-                    .collect(Collectors.toList());
-        } catch (RuntimeException ex) {
-            throw new CitaMedicaException("Error al obtener las citas medicas " + ex);
+            return citasMedicasDb.stream()
+                            .map(citaMedicaDb -> mapper.transformarCitaMedicaADto(citaMedicaDb))
+                            .collect(Collectors.toList());
+        } catch (RuntimeException ex) {  
+            throw new CitaMedicaException("Error al obtener las citas medicas " +ex.toString());
         }
 
     }
-    @Override
-    public CitaMedicaResponseDto createCitaMedica(CitaMedicaRequestDto citaMedicaRequestDto) {
+    // @Override
+    public CitaMedicaResponseDto createCitaMedicaOld(CitaMedicaRequestDto citaMedicaRequestDto) {
         try {
             PacienteResponseDto pacienteDto = pacienteService
                     .getPacienteByCedula(citaMedicaRequestDto.getCedulaPaciente());
 
-        /*se vuelven a crear todos los datos, pasando del DTO a la entidad (Posible paso redundante, pero desacopla de usar directamte lo que trae la BD)
-        se podria directamente llamar al repository y obtener directamente el tipo de dato sin tener que transformar la data, pero existiria
-        acoplamiento de un servicio a un reopository diferente.. 
-        Optional<Paciente> pacienteDb2 = pacienteRepository.findByCedula(citaMedicaRequestDto.getCedulaPaciente());
-        */
-            //1 buscando si paciente existe
-            Paciente pacienteDb = new Paciente(Long.parseLong(pacienteDto.getId()), pacienteDto.getNombre(), pacienteDto.getApellido(),
+            /*
+             * se vuelven a crear todos los datos, pasando del DTO a la entidad (Posible
+             * paso redundante, pero desacopla de usar directamte lo que trae la BD)
+             * se podria directamente llamar al repository y obtener directamente el tipo de
+             * dato sin tener que transformar la data, pero existiria
+             * acoplamiento de un servicio a un reopository diferente..
+             * Optional<Paciente> pacienteDb2 =
+             * pacienteRepository.findByCedula(citaMedicaRequestDto.getCedulaPaciente());
+             */
+            // 1 buscando si paciente existe
+            Paciente pacienteDb = new Paciente(Long.parseLong(pacienteDto.getId()), pacienteDto.getNombre(),
+                    pacienteDto.getApellido(),
                     pacienteDto.getCedula(), pacienteDto.getFechaNacimiento(), pacienteDto.getTelefono());
-            
-            //2 buscando si existen consultorios asignados a un doctor con esa especialdiad
+
+            // 2 buscando si existen consultorios asignados a un doctor con esa especialdiad
             List<ConsultorioAsignadoResponseDto> consutoriosConEspecialidad = consultorioAsignadoService
                     .getConsultorioAsignadoByEspecialidad(citaMedicaRequestDto.getEspecialidad());
 
@@ -104,9 +118,9 @@ public class CitasMedicasServiceImpl implements CitasMedicasService {
                 throw new CitaMedicaException(
                         "No existen consultorios disponibles para citas en el rango de fechas indicado");
             }
-            // se escoje el 1er consultorioDisponible que ya este asignado a un Doctor x Defecto
+            // se escoje el 1er consultorioDisponible que ya este asignado a un Doctor x
+            // Defecto
             ConsultorioAsignadoResponseDto consultorioAsigCita = consutoriosConEspecialidadDisponibles.get(0);
-
 
             DoctorResponseDto doctorDto = doctorService.getDoctoresById(consultorioAsigCita.getIdDoctor());
 
@@ -132,12 +146,101 @@ public class CitasMedicasServiceImpl implements CitasMedicasService {
 
             citaMedicaDb = citaMedicaRepository.save(citaMedicaDb);
 
+            /*
+             * return new CitaMedicaResponseDto(citaMedicaDb.getId().toString(),
+             * consultorioAsigCita.getNombre() + " " + consultorioAsigCita.getApellido(),
+             * pacienteDto.getNombre() + " " + pacienteDto.getApellido(),
+             * consultorioAsigCita.getNombreEspecialidad(), citaMedicaDb.getFechaInicio(),
+             * citaMedicaDb.getFechaFin(),
+             * consultorioAsigCita.getNumero());
+             */
+
             return new CitaMedicaResponseDto(citaMedicaDb.getId().toString(),
-                consultorioAsignadoDb.getDoctor().getNombre() + " " + consultorioAsignadoDb.getDoctor().getApellido(),
+                    consultorioAsignadoDb.getDoctor().getNombre() + " "
+                            + consultorioAsignadoDb.getDoctor().getApellido(),
                     citaMedicaDb.getPaciente().getNombre() + " " + citaMedicaDb.getPaciente().getApellido(),
                     consultorioAsignadoDb.getDoctor().getEspecialidad().getNombre(), citaMedicaDb.getFechaInicio(),
                     citaMedicaDb.getFechaFin(),
                     citaMedicaDb.getConsultorioAsignado().getConsultorio().getNumero());
+
+        } catch (RuntimeException ex) {
+            throw new CitaMedicaException("Error al guardar las citas medicas" + ex);
+        }
+
+    }
+
+    @Override
+    public CitaMedicaResponseDto createCitaMedica(CitaMedicaRequestDto citaMedicaRequestDto) {
+        // creo que cumpliria demeter porque me comunico con los objetos creados en el metodo y sus propiedades,
+        //No creo violar la ley de demeter ya que estoy accediendo a los atributos creados en el mismo metodo
+
+        try {
+            // 1 buscando si paciente existe
+            PacienteResponseDto pacienteDto = pacienteService
+                    .getPacienteByCedula(citaMedicaRequestDto.getCedulaPaciente());
+
+            /*
+             * se vuelven a crear todos los datos, pasando del DTO a la entidad (Posible
+             * paso redundante, pero desacopla de usar directamte lo que trae la BD)
+             * se podria directamente llamar al repository y obtener directamente el tipo de
+             * dato sin tener que transformar la data, pero existiria
+             * acoplamiento de un servicio a un reopository diferente..
+             * Optional<Paciente> pacienteDb2 =
+             * pacienteRepository.findByCedula(citaMedicaRequestDto.getCedulaPaciente());
+             */
+            // 2 buscando si existen consultorios asignados a un doctor con esa especialdiad
+            List<ConsultorioAsignadoResponseDto> consutoriosConEspecialidad = consultorioAsignadoService
+                    .getConsultorioAsignadoByEspecialidad(citaMedicaRequestDto.getEspecialidad());
+
+            if (consutoriosConEspecialidad.size() == 0) {
+                throw new ConsultorioDoesntExistException("No existen consultorios Asignados con esa especialidad");
+            }
+            if (!citaMedicaRequestDto.getFechaFin().isAfter(citaMedicaRequestDto.getFechaInicio())) {
+                throw new CitaMedicaException(
+                        "La fecha de inicio no puede ser superior a la fecha fin de reserva o a la actual");
+            }
+            List<ConsultorioAsignadoResponseDto> consutoriosConEspecialidadDisponibles = getConsultoriosDisponible(
+                    consutoriosConEspecialidad, citaMedicaRequestDto.getFechaInicio(),
+                    citaMedicaRequestDto.getFechaFin());
+            if (consutoriosConEspecialidadDisponibles.size() == 0) {
+                throw new CitaMedicaException(
+                        "No existen consultorios disponibles para citas en el rango de fechas indicado");
+            }
+            // se escoje el 1er consultorioDisponible que ya este asignado a un Doctor x
+            // Defecto
+            ConsultorioAsignadoResponseDto consultorioAsigCitaDto = consutoriosConEspecialidadDisponibles.get(0);
+
+            DoctorResponseDto doctorDto = doctorService.getDoctoresById(consultorioAsigCitaDto.getIdDoctor());
+
+            EspecialidadDto especialidadDto = especialidadesService
+                    .getEspecialidadByNombre(doctorDto.getNombreEspecialidad());
+
+            ConsultorioDto consultorioDto = consultorioService
+                    .getConsultorioById(consultorioAsigCitaDto.getIdConsultorio());
+
+                    
+            Paciente pacienteDb = new Paciente(Long.parseLong(pacienteDto.getId()), pacienteDto.getNombre(),
+                    pacienteDto.getApellido(),
+                    pacienteDto.getCedula(), pacienteDto.getFechaNacimiento(), pacienteDto.getTelefono());
+
+            Especialidad especialidadDb = new Especialidad(especialidadDto.getId(),
+                    EnumEspecialidad.valueOf(especialidadDto.getNombre()));
+
+            Doctor doctorDb = new Doctor(doctorDto.getId(), doctorDto.getNombre(), doctorDto.getApellido(),
+                    doctorDto.getCorreo(), especialidadDb);
+            Consultorio consultorioDb = new Consultorio(consultorioDto.getId(), consultorioDto.getCiudad(),
+                    consultorioDto.getDireccion(), consultorioDto.getNumero(), consultorioDto.getDescripcion());
+
+            ConsultorioAsignado consultorioAsignadoDb = new ConsultorioAsignado(
+                    consultorioAsigCitaDto.getIdConsultorioAsignado(), consultorioAsigCitaDto.getInicioReserva(),
+                    consultorioAsigCitaDto.getFinReserva(), doctorDb, consultorioDb);
+
+            CitaMedica citaMedicaDb = new CitaMedica(pacienteDb, doctorDb.getEspecialidad().getNombre(),
+                    citaMedicaRequestDto.getFechaInicio(), citaMedicaRequestDto.getFechaFin(), consultorioAsignadoDb);
+
+            citaMedicaDb = citaMedicaRepository.save(citaMedicaDb);
+        
+            return mapper.transformarCitaMedicaADto(citaMedicaDb);
 
         } catch (RuntimeException ex) {
             throw new CitaMedicaException("Error al guardar las citas medicas" + ex);
@@ -152,36 +255,22 @@ public class CitasMedicasServiceImpl implements CitasMedicasService {
             throw new CitaMedicaException("La cita medica indicada no exise");
         }
         CitaMedica citaMedicaDb = citaMedicaOp.get();
-
-        return new CitaMedicaResponseDto(citaMedicaDb.getId().toString(),
-        citaMedicaDb.getConsultorioAsignado().getDoctor().getNombre() + " " + citaMedicaDb.getConsultorioAsignado().getDoctor().getApellido(),
-                citaMedicaDb.getPaciente().getNombre() + " " + citaMedicaDb.getPaciente().getApellido(),
-                citaMedicaDb.getConsultorioAsignado().getDoctor().getEspecialidad().getNombre(), citaMedicaDb.getFechaInicio(),
-                citaMedicaDb.getFechaFin(),
-                citaMedicaDb.getConsultorioAsignado().getConsultorio().getNumero());
-
+        return mapper.transformarCitaMedicaADto(citaMedicaDb);
     }
 
     @Override
     public List<CitaMedicaResponseDto> getCitasMedicasByConsultorioAsignadoId(Long id) {
         try {
-
             List<CitaMedica> citasMedicasDb = citaMedicaRepository.findAllByConsultorioAsignadoId(id);
-
-            return citasMedicasDb.stream().map(citaMedicaDb -> new CitaMedicaResponseDto(citaMedicaDb.getId().toString(),
-            citaMedicaDb.getConsultorioAsignado().getDoctor().getNombre() + " " + citaMedicaDb.getConsultorioAsignado().getDoctor().getApellido(),
-                    citaMedicaDb.getPaciente().getNombre() + " " + citaMedicaDb.getPaciente().getApellido(),
-                    citaMedicaDb.getConsultorioAsignado().getDoctor().getEspecialidad().getNombre(), citaMedicaDb.getFechaInicio(),
-                    citaMedicaDb.getFechaFin(),
-                    citaMedicaDb.getConsultorioAsignado().getConsultorio().getNumero()))
-                    .collect(Collectors.toList());
-
+            return citasMedicasDb
+                    .stream().map(citaMedicaDb ->mapper.transformarCitaMedicaADto(citaMedicaDb)).collect(Collectors.toList());
         } catch (ConsultorioDoesntExistException ex) {
             throw new ConsultorioDoesntExistException("E" + ex);
 
         }
     }
-    //RETORNA CONSULTORIOS ASIGNADOS CON DISPONIBILIDAD DE CITA MEDICA
+
+    // RETORNA CONSULTORIOS ASIGNADOS CON DISPONIBILIDAD DE CITA MEDICA
     private List<ConsultorioAsignadoResponseDto> getConsultoriosDisponible(
             List<ConsultorioAsignadoResponseDto> consutoriosConEspecialidad, LocalDateTime fechaSolicitudCitaInicio,
             LocalDateTime fechaSolicitudCitaFin) {
@@ -257,53 +346,37 @@ public class CitasMedicasServiceImpl implements CitasMedicasService {
 
     @Override
     public List<CitaMedicaResponseDto> getCitasMedicasByDoctorId(Long id) {
-        //primero validar si el doctor existe
+        // primero validar si el doctor existe
         DoctorResponseDto doctor = doctorService.getDoctoresById(id);
         List<CitaMedica> citasMedicasDb = citaMedicaRepository.findAllByConsultorioAsignadoDoctorId(id);
-
-        return citasMedicasDb.stream().map(citaMedicaDb -> new CitaMedicaResponseDto(citaMedicaDb.getId().toString(),
-                    citaMedicaDb.getConsultorioAsignado().getDoctor().getNombre() + " " + citaMedicaDb.getConsultorioAsignado().getDoctor().getApellido(),
-                    citaMedicaDb.getPaciente().getNombre() + " " + citaMedicaDb.getPaciente().getApellido(),
-                    citaMedicaDb.getConsultorioAsignado().getDoctor().getEspecialidad().getNombre(), citaMedicaDb.getFechaInicio(),
-                    citaMedicaDb.getFechaFin(),
-                    citaMedicaDb.getConsultorioAsignado().getConsultorio().getNumero()))
-                    .collect(Collectors.toList());
-
-    }
+        return citasMedicasDb
+                        .stream().map(citaMedicaDb -> mapper.transformarCitaMedicaADto(citaMedicaDb))
+                        .collect(Collectors.toList());
+   }
 
     @Override
     public List<CitaMedicaResponseDto> getCitasMedicasByPacienteId(Long id) {
-        //primero validar si el paciente existe
-        PacienteResponseDto paciente=pacienteService.getPacienteById(id);
+        // primero validar si el paciente existe
+        PacienteResponseDto paciente = pacienteService.getPacienteById(id);
 
         List<CitaMedica> citasMedicasDb = citaMedicaRepository.findAllByPacienteId(id);
-        return citasMedicasDb.stream().map(citaMedicaDb -> new CitaMedicaResponseDto(citaMedicaDb.getId().toString(),
-                    citaMedicaDb.getConsultorioAsignado().getDoctor().getNombre() + " " + citaMedicaDb.getConsultorioAsignado().getDoctor().getApellido(),
-                    citaMedicaDb.getPaciente().getNombre() + " " + citaMedicaDb.getPaciente().getApellido(),
-                    citaMedicaDb.getConsultorioAsignado().getDoctor().getEspecialidad().getNombre(), citaMedicaDb.getFechaInicio(),
-                    citaMedicaDb.getFechaFin(),
-                    citaMedicaDb.getConsultorioAsignado().getConsultorio().getNumero()))
-                    .collect(Collectors.toList());
+          return citasMedicasDb
+                    .stream().map(citaMedicaDb ->mapper.transformarCitaMedicaADto(citaMedicaDb)).collect(Collectors.toList());   
     }
 
     @Override
     public List<CitaMedicaResponseDto> getCitasMedicasByNombreEspecialidad(String especialidad) {
-        //mirando si existe especialidad
+        // mirando si existe especialidad
         EspecialidadDto especialidadOp = especialidadesService.getEspecialidadByNombre(especialidad);
-        //volviendola a tipo especialiad para poder hacer el query con jpa sin usar @query
+        // volviendola a tipo especialiad para poder hacer el query con jpa sin usar
+        // @query
         Especialidad especialidadDb = new Especialidad(especialidadOp.getId(),
                 EnumEspecialidad.valueOf(especialidadOp.getNombre()));
-        List<CitaMedica> citasMedicasDb  = citaMedicaRepository.findAllByConsultorioAsignadoDoctorEspecialidad(especialidadDb);
-
-        return citasMedicasDb.stream().map(citaMedicaDb -> new CitaMedicaResponseDto(citaMedicaDb.getId().toString(),
-            citaMedicaDb.getConsultorioAsignado().getDoctor().getNombre() + " " + citaMedicaDb.getConsultorioAsignado().getDoctor().getApellido(),
-            citaMedicaDb.getPaciente().getNombre() + " " + citaMedicaDb.getPaciente().getApellido(),
-            citaMedicaDb.getConsultorioAsignado().getDoctor().getEspecialidad().getNombre(), citaMedicaDb.getFechaInicio(),
-            citaMedicaDb.getFechaFin(),
-           citaMedicaDb.getConsultorioAsignado().getConsultorio().getNumero()))
-            .collect(Collectors.toList());
-
+        List<CitaMedica> citasMedicasDb = citaMedicaRepository
+                .findAllByConsultorioAsignadoDoctorEspecialidad(especialidadDb);
+          return citasMedicasDb
+                    .stream().map(citaMedicaDb ->mapper.transformarCitaMedicaADto(citaMedicaDb)).collect(Collectors.toList());
     }
 
-    
+
 }

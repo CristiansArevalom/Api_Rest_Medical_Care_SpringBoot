@@ -12,6 +12,7 @@ import com.citasmedicas.citasmedicas.model.entity.EnumEspecialidad;
 import com.citasmedicas.citasmedicas.model.entity.Especialidad;
 import com.citasmedicas.citasmedicas.model.repository.EspecialidadRepository;
 import com.citasmedicas.citasmedicas.service.EspecialidadesService;
+import com.citasmedicas.citasmedicas.util.CommonMapper;
 
 import jakarta.annotation.PostConstruct;
 
@@ -19,9 +20,12 @@ import jakarta.annotation.PostConstruct;
 public class EspecialidadesServiceImpl implements EspecialidadesService {
     
     private final EspecialidadRepository especialidadRepository;
+    private final CommonMapper mapper;
 
-    public EspecialidadesServiceImpl(EspecialidadRepository especialidadRepository) {
+    public EspecialidadesServiceImpl(EspecialidadRepository especialidadRepository,
+    CommonMapper mapper) {
         this.especialidadRepository = especialidadRepository;
+        this.mapper=mapper;
     }
 
     @PostConstruct // se ejecuta apenas inicia el servidor, llena toda la tabla de especialdiades,
@@ -52,8 +56,7 @@ public class EspecialidadesServiceImpl implements EspecialidadesService {
             List<Especialidad> especialidades = especialidadRepository.findAll();
             // llenando DTO
             return especialidades.stream().map(
-                    especialidad -> new EspecialidadDto(
-                            especialidad.getId(), especialidad.getNombre(), especialidad.getDescripcion()))
+                    especialidad -> mapper.convertToDto(especialidad, EspecialidadDto.class))
                     .collect(Collectors.toList());
         } catch (RuntimeException ex) {
             throw new RuntimeException("ERROR AL LEER LAS ESPECIALIDADES");
@@ -76,8 +79,7 @@ public class EspecialidadesServiceImpl implements EspecialidadesService {
             if (especialidad.isEmpty()) {
                 throw new EspecialidadDoesntExistExceptions("No existe la especialidad con excactamente ese nombre");
             }
-            return new EspecialidadDto(especialidad.get().getId(), especialidad.get().getNombre(),
-                    especialidad.get().getDescripcion());
+            return mapper.convertToDto(especialidad, EspecialidadDto.class);
         } catch (IllegalArgumentException ex) {
             throw new EspecialidadDoesntExistExceptions("No existe la especialidad con excactamente ese nombre");
         }
@@ -89,8 +91,7 @@ public class EspecialidadesServiceImpl implements EspecialidadesService {
         if (especialidad.isEmpty()) {
             throw new EspecialidadDoesntExistExceptions("No existe la especialidad con ese ID");
         }
-        return new EspecialidadDto(especialidad.get().getId(), especialidad.get().getNombre(),
-                especialidad.get().getDescripcion());
+        return mapper.convertToDto(especialidad, EspecialidadDto.class);
     }
     
 }

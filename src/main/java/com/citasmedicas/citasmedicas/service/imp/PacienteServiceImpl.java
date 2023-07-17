@@ -9,41 +9,40 @@ import org.springframework.stereotype.Service;
 
 import com.citasmedicas.citasmedicas.controller.dto.PacienteRequestDto;
 import com.citasmedicas.citasmedicas.controller.dto.PacienteResponseDto;
+
 import com.citasmedicas.citasmedicas.exceptions.PacienteAlreadyExistExceptions;
 import com.citasmedicas.citasmedicas.exceptions.PacienteDoesntExistExceptions;
+
 import com.citasmedicas.citasmedicas.model.entity.Paciente;
 import com.citasmedicas.citasmedicas.model.repository.PacienteRepository;
 import com.citasmedicas.citasmedicas.service.PacienteService;
+import com.citasmedicas.citasmedicas.util.CommonMapper;
 
 @Service
 public class PacienteServiceImpl implements PacienteService {
     private final PacienteRepository pacienteRepository;
+    private final CommonMapper mapper;
 
-
-    public PacienteServiceImpl(PacienteRepository pacienteRepository) {
+    public PacienteServiceImpl(PacienteRepository pacienteRepository,CommonMapper mapper) {
         this.pacienteRepository = pacienteRepository;
+        this.mapper=mapper;
     }
 
-
+    //crear servicio que retorne paciente y no el DTO. 
+    //no es recomendable usar excesivamente os principis/patrones como en este caso:
+    
     @Override
     public List<PacienteResponseDto> getPacientes() {
         try{
         List<Paciente> pacientes = pacienteRepository.findAll();
+        return pacientes.stream().map(paciente -> mapper.transformarPacienteADto(paciente))
+                .collect(Collectors.toList());
 
-        //llenando el DTO de paciente
-        return pacientes.stream().map(paciente -> new PacienteResponseDto(
-            paciente.getId().toString(),
-            paciente.getNombre(), 
-            paciente.getApellido(),
-             paciente.getCedula(), 
-             paciente.getFechaNacimiento(), 
-             paciente.getTelefono())).collect(Collectors.toList());
         }catch(Exception ex){
             throw new UnsupportedOperationException("Error al obtener pacientes" +ex);
 
         }          
     }
-
 
     @Override
     public PacienteResponseDto createPaciente(PacienteRequestDto paciente) {
@@ -70,11 +69,7 @@ public class PacienteServiceImpl implements PacienteService {
         pacienteDb.setTelefono(paciente.getTelefono());
         pacienteDb=pacienteRepository.save(pacienteDb);//usa el save que trae JPA
 
-        return new PacienteResponseDto(pacienteDb.getId().toString(),pacienteDb.getNombre(), 
-        pacienteDb.getApellido(), 
-        pacienteDb.getCedula(), 
-        pacienteDb.getFechaNacimiento(),
-        pacienteDb.getTelefono());
+        return mapper.transformarPacienteADto(pacienteDb);
     }
 
 
@@ -100,11 +95,9 @@ public class PacienteServiceImpl implements PacienteService {
         pacienteDb.setFechaNacimiento(paciente.getFechaNacimiento());
         pacienteDb.setTelefono(paciente.getTelefono());
         pacienteDb=pacienteRepository.save(pacienteDb);
-        return new PacienteResponseDto(paciente.getId().toString(),pacienteDb.getNombre(), 
-            pacienteDb.getApellido(), 
-            pacienteDb.getCedula(), 
-            pacienteDb.getFechaNacimiento(),
-            pacienteDb.getTelefono());
+
+        return mapper.transformarPacienteADto(pacienteDb);
+
     }
 
 
@@ -126,12 +119,7 @@ public class PacienteServiceImpl implements PacienteService {
         throw new PacienteDoesntExistExceptions("El paciente no existe");
        }
        Paciente pacienteDb = pacienteOp.get();
-        PacienteResponseDto paciente = new PacienteResponseDto(pacienteDb.getId().toString(),pacienteDb.getNombre(), 
-        pacienteDb.getApellido(), 
-        pacienteDb.getCedula(), 
-        pacienteDb.getFechaNacimiento(),
-        pacienteDb.getTelefono());
-       return paciente;
+        return mapper.transformarPacienteADto(pacienteDb);
     }
 
 
@@ -142,12 +130,7 @@ public class PacienteServiceImpl implements PacienteService {
          throw new PacienteDoesntExistExceptions("El paciente no existe");
         }
         Paciente pacienteDb = pacienteOp.get();
-         PacienteResponseDto paciente = new PacienteResponseDto(pacienteDb.getId().toString(),pacienteDb.getNombre(), 
-         pacienteDb.getApellido(), 
-         pacienteDb.getCedula(), 
-         pacienteDb.getFechaNacimiento(),
-         pacienteDb.getTelefono());
-        return paciente;
+       return mapper.transformarPacienteADto(pacienteDb);
     }
     
     

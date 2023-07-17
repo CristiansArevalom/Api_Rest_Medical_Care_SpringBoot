@@ -16,6 +16,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 
+//SE RECOMIENDA USAR MEJOR CON LA ENTIDA Y NO EL DTO YA QUE LA ENTIDAD ES LA DATA QUE REALMENTE VOY A ENTREGAR.
+
+
 @Entity
 @Table(name="Consultorios_asignados")
 public class ConsultorioAsignado {
